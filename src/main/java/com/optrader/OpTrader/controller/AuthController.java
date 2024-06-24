@@ -7,6 +7,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import com.optrader.OpTrader.config.JwtProvider;
 import com.optrader.OpTrader.modal.User;
@@ -24,7 +25,7 @@ public class AuthController {
     private UserRepository userRepository;
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> register(User user) throws Exception {
+    public ResponseEntity<AuthResponse> register(@RequestBody User user) throws Exception {
 
         User isEmailExist = userRepository.findByEmail(user.getEmail());
 
@@ -52,7 +53,34 @@ public class AuthController {
         AuthResponse res = new AuthResponse();
         res.setJwt(jwt);
         res.setStatus(true);
-        res.setMessage("REGISTRE SUCCESS");
+        res.setMessage("REGISTER SUCCESS");
+
+        return new ResponseEntity<>(res, HttpStatus.CREATED);
+
+    }
+
+    @PostMapping("/signin")
+    public ResponseEntity<AuthResponse> login(@RequestBody User user) throws Exception {
+
+        User isEmailExist = userRepository.findByEmail(user.getEmail());
+
+        if (isEmailExist != null) {
+            throw new Exception(
+                    "Email Already Exists. It is already being used by another account. Check your credentials.");
+        }
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                user.getEmail(),
+                user.getPassword());
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String jwt = JwtProvider.generateToken(auth);
+
+        AuthResponse res = new AuthResponse();
+        res.setJwt(jwt);
+        res.setStatus(true);
+        res.setMessage("REGISTER SUCCESS");
 
         return new ResponseEntity<>(res, HttpStatus.CREATED);
 
