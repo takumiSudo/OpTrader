@@ -3,6 +3,7 @@ package com.optrader.OpTrader.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +14,11 @@ import com.optrader.OpTrader.config.JwtProvider;
 import com.optrader.OpTrader.modal.User;
 import com.optrader.OpTrader.repository.UserRepository;
 import com.optrader.OpTrader.response.AuthResponse;
+import com.optrader.OpTrader.service.CustomUserDetailsService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,6 +26,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> register(@RequestBody User user) throws Exception {
@@ -62,16 +68,10 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> login(@RequestBody User user) throws Exception {
 
-        User isEmailExist = userRepository.findByEmail(user.getEmail());
+        String userName = user.getEmail();
+        String password = user.getPassword();
 
-        if (isEmailExist != null) {
-            throw new Exception(
-                    "Email Already Exists. It is already being used by another account. Check your credentials.");
-        }
-
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                user.getEmail(),
-                user.getPassword());
+        Authentication auth = authenticate(userName, password);
 
         SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -80,9 +80,24 @@ public class AuthController {
         AuthResponse res = new AuthResponse();
         res.setJwt(jwt);
         res.setStatus(true);
-        res.setMessage("REGISTER SUCCESS");
+        res.setMessage("LOGIN SUCCESS");
 
         return new ResponseEntity<>(res, HttpStatus.CREATED);
 
+    }
+
+    private Authentication authenticate(String userName, String password) {
+        // check if user exists or not?
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(userName);
+
+        if (userDetails == null) {
+            throw new BadCredentialsException("Invalid Username");
+        }
+        if (password.equals(userDetails.getPassword())) {
+            throw new BadCredentialsException("Invalid Password");
+        }
+        return new UsernamePasswordAuthenticationToken(userDetails, password, userDetails.getAuthorities());
+
+        // User password match?
     }
 }
