@@ -7,9 +7,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+
+import com.optrader.OpTrader.config.JwtProvider;
 import com.optrader.OpTrader.modal.User;
 import com.optrader.OpTrader.repository.UserRepository;
+import com.optrader.OpTrader.response.AuthResponse;
+
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/auth")
@@ -19,7 +24,7 @@ public class AuthController {
     private UserRepository userRepository;
 
     @PostMapping("/signup")
-    public ResponseEntity<User> register(User user) throws Exception {
+    public ResponseEntity<AuthResponse> register(User user) throws Exception {
 
         User isEmailExist = userRepository.findByEmail(user.getEmail());
 
@@ -40,7 +45,16 @@ public class AuthController {
                 user.getEmail(),
                 user.getPassword());
 
-        return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String jwt = JwtProvider.generateToken(auth);
+
+        AuthResponse res = new AuthResponse();
+        res.setJwt(jwt);
+        res.setStatus(true);
+        res.setMessage("REGISTRE SUCCESS");
+
+        return new ResponseEntity<>(res, HttpStatus.CREATED);
 
     }
 }
