@@ -31,4 +31,5 @@ In this comprehensive full-stack series, I will guide you through creating a ful
 - Gemini API
 - CoinGecko API
 
-Join me in this series to gain hands-on experience and build a powerful, full-featured crypto trading platform.
+
+ 
